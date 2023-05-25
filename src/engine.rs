@@ -398,8 +398,12 @@ pub fn gen_buffers(buffers: usize) -> Vec<wgpu::Buffer> {
     todo!("Generate new buffers");
 }
 
-pub fn create_buffer(vertices: &[Vertex]) -> wgpu::Buffer {
-    todo!("Create buffer");
+pub fn create_buffer(device: &wgpu::Device, vertices: &[Vertex]) -> wgpu::Buffer {
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Vertex Buffer"),
+        contents: bytemuck::cast_slice(vertices),
+        usage: wgpu::BufferUsages::VERTEX,
+    })
 }
 
 pub async fn run() {
