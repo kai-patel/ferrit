@@ -226,7 +226,7 @@ impl State {
         let vertex_buffer = create_vertex_buffer(&device, &vertices);
         let index_buffer = create_index_buffer(&device, &indices);
 
-        let num_indices = INDICES.len() as u32;
+        let num_indices = indices.len() as u32;
 
         let camera = Camera {
             eye: (0.0, 4.0, 8.0).into(),
