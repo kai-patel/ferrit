@@ -50,15 +50,14 @@ impl Chunk {
         let mut i = 0;
 
         let mut vertices = &mut [engine::Vertex {
-            position: [0, 0, 0],
-            block_type: BlockType::EMPTY as u8,
+            position: [0.0, 0.0, 0.0],
+            color: [0.0, 0.0, 0.0],
         }; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 6 * 6];
 
         for x in 0..CHUNK_SIZE as u8 {
             for y in 0..CHUNK_SIZE as u8 {
                 for z in 0..CHUNK_SIZE as u8 {
-                    let block_type = self.blk[x as usize][y as usize][z as usize];
-                    let b_type = block_type as u8;
+                    let _block_type = self.blk[x as usize][y as usize][z as usize];
                     let vs = vec![
                         [x, y, z],
                         [x, y, z + 1],
@@ -97,9 +96,11 @@ impl Chunk {
                         [x + 1, y, z + 1],
                         [x + 1, y + 1, z + 1],
                     ];
-                    for j in 0..36 {
-                        vertices[i].position = vs[j];
-                        vertices[i].block_type = b_type;
+                    for _ in 0..36 {
+                        vertices[i].position[0] = vs[i][0] as f32;
+                        vertices[i].position[1] = vs[i][1] as f32;
+                        vertices[i].position[2] = vs[i][2] as f32;
+                        vertices[i].color = [1.0, 0.0, 0.0];
                         i += 1;
                     }
                 }
@@ -108,6 +109,7 @@ impl Chunk {
 
         self.elements = i;
         let vbo = engine::create_buffer(vertices);
+        self.vbo = vbo;
     }
 
     pub fn render(&mut self) {
