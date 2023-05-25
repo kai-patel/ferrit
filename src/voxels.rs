@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::engine;
 
-const CHUNK_SIZE: usize = 1;
+const CHUNK_SIZE: usize = 2;
 
 const CUBE_VERTICES: [[f32; 3]; 24] = [
     [-1.0, -1.0, 1.0],
@@ -96,9 +96,9 @@ impl Chunk {
                     let zf = z as f32;
 
                     for v in CUBE_VERTICES {
-                        self.vertices[i].position[0] = ( xf + v[0] )/1.0;
-                        self.vertices[i].position[1] = ( yf + v[1] )/1.0;
-                        self.vertices[i].position[2] = ( zf + v[2] )/1.0;
+                        self.vertices[i].position[0] = xf + v[0];
+                        self.vertices[i].position[1] = yf + v[1];
+                        self.vertices[i].position[2] = zf + v[2];
                         self.vertices[i].color = self.vertices[i].position;
                         i += 1;
                     }
@@ -107,13 +107,12 @@ impl Chunk {
         }
 
         // For each cube in the chunk, add the indices
-        for a in 0..CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE {
-            for b in 0..36 {
-                self.indices[b + a] = CUBE_INDICES[b] + (a as u16);
-            }
+        for a in 0..CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 36 {
+            self.indices[a] = {
+                let n = a / 36;
+                CUBE_INDICES[a % 36] + (n * 36) as u16
+            };
         }
-
-        println!("{:?}", self.vertices);
 
         self.elements = i;
     }
