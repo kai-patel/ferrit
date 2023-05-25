@@ -10,7 +10,7 @@ use bytemuck::Pod;
 use bytemuck::Zeroable;
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug, Pod, Zeroable)]
+#[derive(Copy, Clone, Default, Debug, Pod, Zeroable)]
 pub struct Vertex {
     pub position: [f32; 3],
     pub color: [f32; 3],
@@ -218,17 +218,8 @@ impl State {
 
         let shader = device.create_shader_module(include_wgsl!("shader.wgsl"));
 
-        let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Vertex Buffer"),
-            contents: bytemuck::cast_slice(VERTICES),
-            usage: wgpu::BufferUsages::VERTEX,
-        });
-
-        let index_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: Some("Index Buffer"),
-            contents: bytemuck::cast_slice(INDICES),
-            usage: wgpu::BufferUsages::INDEX,
-        });
+        let vertex_buffer = create_vertex_buffer(&device, VERTICES);
+        let index_buffer = create_index_buffer(&device, INDICES);
 
         let num_indices = INDICES.len() as u32;
 
@@ -398,11 +389,19 @@ pub fn gen_buffers(buffers: usize) -> Vec<wgpu::Buffer> {
     todo!("Generate new buffers");
 }
 
-pub fn create_buffer(device: &wgpu::Device, vertices: &[Vertex]) -> wgpu::Buffer {
+pub fn create_vertex_buffer(device: &wgpu::Device, vertices: &[Vertex]) -> wgpu::Buffer {
     device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Vertex Buffer"),
         contents: bytemuck::cast_slice(vertices),
         usage: wgpu::BufferUsages::VERTEX,
+    })
+}
+
+pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buffer {
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Index Buffer"),
+        contents: bytemuck::cast_slice(indices),
+        usage: wgpu::BufferUsages::INDEX,
     })
 }
 
