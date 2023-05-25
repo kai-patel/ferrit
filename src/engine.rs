@@ -8,6 +8,7 @@ use winit::{
 
 use bytemuck::Pod;
 use bytemuck::Zeroable;
+use rand::Rng;
 
 #[repr(C)]
 #[derive(Copy, Clone, Default, Debug, Pod, Zeroable)]
@@ -413,7 +414,28 @@ pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buff
 pub async fn run() {
     env_logger::init();
 
+    let mut rng = rand::thread_rng();
     let mut chunks = [crate::voxels::Chunk::new()];
+
+    let chunk_size = crate::voxels::CHUNK_SIZE;
+    for x in 0..chunk_size {
+        for y in 0..chunk_size {
+            for z in 0..chunk_size {
+                chunks[0].set(
+                    x,
+                    y,
+                    z,
+                    match rng.gen_range(0..3) {
+                        0 => crate::voxels::BlockType::RED,
+                        1 => crate::voxels::BlockType::BLUE,
+                        2 => crate::voxels::BlockType::GREEN,
+                        3 => crate::voxels::BlockType::YELLOW,
+                        _ => crate::voxels::BlockType::EMPTY,
+                    },
+                );
+            }
+        }
+    }
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()

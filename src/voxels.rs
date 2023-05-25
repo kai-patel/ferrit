@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::engine;
 
-const CHUNK_SIZE: usize = 2;
+pub const CHUNK_SIZE: usize = 2;
 
 const CUBE_VERTICES: [[f32; 3]; 24] = [
     [-1.0, -1.0, 1.0],
@@ -44,6 +44,10 @@ pub enum BlockType {
     #[default]
     EMPTY,
     SOLID,
+    RED,
+    GREEN,
+    BLUE,
+    YELLOW,
 }
 
 #[derive(Debug)]
@@ -89,7 +93,7 @@ impl Chunk {
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
-                    let _block_type = self.blk[x as usize][y as usize][z as usize];
+                    let block_type = self.blk[x as usize][y as usize][z as usize];
 
                     let xf = x as f32;
                     let yf = y as f32;
@@ -99,9 +103,18 @@ impl Chunk {
                         self.vertices[i].position[0] = xf + v[0];
                         self.vertices[i].position[1] = yf + v[1];
                         self.vertices[i].position[2] = zf + v[2];
-                        self.vertices[i].color = self.vertices[i].position;
+                        self.vertices[i].color = match block_type {
+                            BlockType::RED => [1.0, 0.0, 0.0],
+                            BlockType::GREEN => [0.0, 1.0, 0.0],
+                            BlockType::BLUE => [0.0, 0.0, 1.0],
+                            BlockType::YELLOW => [1.0, 1.0, 0.0],
+                            BlockType::EMPTY => [0.0, 1.0, 1.0],
+                            BlockType::SOLID => [1.0, 0.0, 1.0],
+                        };
                         i += 1;
                     }
+
+                    println!("{:?}", self.vertices[i - 1].color);
                 }
             }
         }
@@ -110,9 +123,11 @@ impl Chunk {
         for a in 0..CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 36 {
             self.indices[a] = {
                 let n = a / 36;
-                CUBE_INDICES[a % 36] + (n * 36) as u16
+                CUBE_INDICES[a % 36] + (n * 24) as u16
             };
         }
+
+        // println!("{:?}\n{:?}", self.indices, self.vertices);
 
         self.elements = i;
     }
