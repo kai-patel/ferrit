@@ -164,7 +164,7 @@ struct State {
 }
 
 impl State {
-    async fn new(window: &Window) -> Self {
+    async fn new(window: &Window, chunks: &mut [crate::voxels::Chunk]) -> Self {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -218,13 +218,18 @@ impl State {
 
         let shader = device.create_shader_module(include_wgsl!("shader.wgsl"));
 
-        let vertex_buffer = create_vertex_buffer(&device, VERTICES);
-        let index_buffer = create_index_buffer(&device, INDICES);
+        // TODO: Go over every chunk
+        chunks[0].update();
+        let vertices = chunks[0].vertices;
+        let indices = chunks[0].indices;
+
+        let vertex_buffer = create_vertex_buffer(&device, &vertices);
+        let index_buffer = create_index_buffer(&device, &indices);
 
         let num_indices = INDICES.len() as u32;
 
         let camera = Camera {
-            eye: (0.0, 1.0, 2.0).into(),
+            eye: (0.0, 4.0, 8.0).into(),
             target: (0.0, 0.0, 0.0).into(),
             up: cgmath::Vector3::unit_y(),
             aspect: config.width as f32 / config.height as f32,
@@ -340,7 +345,7 @@ impl State {
 
     fn update(&mut self) {}
 
-    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
+    fn render(&mut self, chunk: &[crate::voxels::Chunk]) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
@@ -408,12 +413,14 @@ pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buff
 pub async fn run() {
     env_logger::init();
 
+    let mut chunks = [crate::voxels::Chunk::new()];
+
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
         .build(&event_loop)
         .expect("Expected to create window");
 
-    let mut state = State::new(&window).await;
+    let mut state = State::new(&window, &mut chunks).await;
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
@@ -444,7 +451,7 @@ pub async fn run() {
         }
         Event::RedrawRequested(window_id) if window_id == window.id() => {
             state.update();
-            match state.render() {
+            match state.render(&chunks) {
                 Ok(_) => {}
                 Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
                 Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
