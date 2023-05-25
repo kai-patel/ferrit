@@ -100,7 +100,6 @@ impl Chunk {
                         self.vertices[i].position[1] = ( yf + v[1] )/1.0;
                         self.vertices[i].position[2] = ( zf + v[2] )/1.0;
                         self.vertices[i].color = self.vertices[i].position;
-                        self.vertices[i].color[2] = 1.0;
                         i += 1;
                     }
                 }
