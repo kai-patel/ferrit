@@ -1,6 +1,7 @@
-pub mod voxels;
 pub mod engine;
+pub mod voxels;
 
-fn main() {
-    println!("Hello, world!");
+#[tokio::main]
+async fn main() {
+    engine::run().await;
 }
