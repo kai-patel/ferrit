@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 use crate::engine;
 
-const CHUNK_SIZE: usize = 16;
+const CHUNK_SIZE: usize = 1;
 
 const CUBE_VERTICES: [[f32; 3]; 24] = [
     [-1.0, -1.0, 1.0],
@@ -40,19 +40,19 @@ const CUBE_INDICES: &[u16] = &[
 ];
 
 #[derive(Copy, Clone, Default, Debug)]
-enum BlockType {
+pub enum BlockType {
     #[default]
     EMPTY,
     SOLID,
 }
 
 #[derive(Debug)]
-struct Chunk {
+pub struct Chunk {
     blk: [[[BlockType; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
     elements: usize,
     changed: bool,
-    vertices: [engine::Vertex; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 24],
-    indices: [u16; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 36],
+    pub vertices: [engine::Vertex; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 24],
+    pub indices: [u16; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 36],
 }
 
 impl Default for Chunk {
@@ -95,21 +95,26 @@ impl Chunk {
                     let yf = y as f32;
                     let zf = z as f32;
 
-                    for idx in 0..CUBE_INDICES.len() {
-                        self.indices[idx] =
-                            CUBE_INDICES[idx] + (x + CHUNK_SIZE * (y + CHUNK_SIZE * z)) as u16;
-                    }
-
                     for v in CUBE_VERTICES {
-                        self.vertices[i].position[0] = xf + v[0];
-                        self.vertices[i].position[1] = yf + v[1];
-                        self.vertices[i].position[2] = zf + v[2];
-                        self.vertices[i].color = [1.0, 0.0, 0.0];
+                        self.vertices[i].position[0] = ( xf + v[0] )/1.0;
+                        self.vertices[i].position[1] = ( yf + v[1] )/1.0;
+                        self.vertices[i].position[2] = ( zf + v[2] )/1.0;
+                        self.vertices[i].color = self.vertices[i].position;
+                        self.vertices[i].color[2] = 1.0;
                         i += 1;
                     }
                 }
             }
         }
+
+        // For each cube in the chunk, add the indices
+        for a in 0..CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE {
+            for b in 0..36 {
+                self.indices[b + a] = CUBE_INDICES[b] + (a as u16);
+            }
+        }
+
+        println!("{:?}", self.vertices);
 
         self.elements = i;
     }
