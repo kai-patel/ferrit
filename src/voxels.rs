@@ -97,16 +97,11 @@ impl Chunk {
         for i in 0..CUBE_VERTICES.len() {
             self.vertices[i] = engine::Vertex {
                 position: CUBE_VERTICES[i],
-                color: [rng.gen(), rng.gen(), rng.gen()],
+                color: [1.0, 0.0, 0.0],
             }
         }
 
         println!("{:?}", self.vertices);
-
-        // self.vertices = Box::new(CUBE_VERTICES.map(|v| engine::Vertex {
-        //     position: v,
-        //     color: [rng.gen(), rng.gen(), rng.gen()],
-        // }));
 
         for i in 0..CUBE_INDICES.len() {
             self.indices[i] = CUBE_INDICES[i];
@@ -129,6 +124,7 @@ impl Chunk {
                             y: yf,
                             z: zf,
                         },
+                        color: [rng.gen(), rng.gen(), rng.gen()],
                         ..Default::default()
                     };
                 }
