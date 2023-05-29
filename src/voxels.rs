@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 use rand::{
-    distributions::{Standard, Uniform},
+    distributions::{Standard},
     prelude::Distribution,
 };
 

@@ -8,7 +8,7 @@ use winit::{
 
 use bytemuck::Pod;
 use bytemuck::Zeroable;
-use rand::Rng;
+
 
 use crate::voxels;
 
@@ -449,7 +449,7 @@ pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buff
 fn create_instance_buffer(device: &wgpu::Device, instance_data: &Vec<InstanceRaw>) -> wgpu::Buffer {
     device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Instance Buffer"),
-        contents: bytemuck::cast_slice(&instance_data),
+        contents: bytemuck::cast_slice(instance_data),
         usage: wgpu::BufferUsages::VERTEX,
     })
 }
@@ -457,8 +457,8 @@ fn create_instance_buffer(device: &wgpu::Device, instance_data: &Vec<InstanceRaw
 pub async fn run() {
     env_logger::init();
 
-    let mut rng = rand::thread_rng();
-    let mut chunks = Box::new(vec![voxels::Chunk::new()]);
+    let _rng = rand::thread_rng();
+    let chunks = Box::new(vec![voxels::Chunk::new()]);
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()
