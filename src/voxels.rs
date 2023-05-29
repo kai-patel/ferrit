@@ -1,6 +1,4 @@
 #![allow(dead_code)]
-use rand::Rng;
-
 use crate::engine;
 
 pub const CHUNK_SIZE: usize = 2;
@@ -52,6 +50,19 @@ pub enum BlockType {
     YELLOW,
 }
 
+impl BlockType {
+    fn get_color(&self) -> [f32; 3] {
+        match self {
+            BlockType::RED => [1.0, 0.0, 0.0],
+            BlockType::BLUE => [0.0, 1.0, 0.0],
+            BlockType::GREEN => [0.0, 0.0, 1.0],
+            BlockType::YELLOW => [1.0, 1.0, 0.0],
+            BlockType::SOLID => [1.0, 0.0, 1.0],
+            BlockType::EMPTY => [0.0, 0.0, 0.0],
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Chunk {
     blk: [[[BlockType; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
@@ -92,16 +103,12 @@ impl Chunk {
     }
 
     pub fn update(&mut self) {
-        let mut rng = rand::thread_rng();
-
         for i in 0..CUBE_VERTICES.len() {
             self.vertices[i] = engine::Vertex {
                 position: CUBE_VERTICES[i],
                 color: [1.0, 0.0, 0.0],
             }
         }
-
-        println!("{:?}", self.vertices);
 
         for i in 0..CUBE_INDICES.len() {
             self.indices[i] = CUBE_INDICES[i];
@@ -112,7 +119,7 @@ impl Chunk {
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
-                    let _block_type = self.blk[x][y][z];
+                    let block_type = self.blk[x][y][z];
 
                     let xf = x as f32;
                     let yf = y as f32;
@@ -124,7 +131,7 @@ impl Chunk {
                             y: yf,
                             z: zf,
                         },
-                        color: [rng.gen(), rng.gen(), rng.gen()],
+                        color: block_type.get_color() ,
                         ..Default::default()
                     };
                 }
