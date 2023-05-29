@@ -168,11 +168,11 @@ struct State {
     camera_uniform: CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
-    chunks: Box<Vec<voxels::Chunk>>,
+    chunks: Vec<voxels::Chunk>,
 }
 
 impl State {
-    async fn new(window: &Window, mut chunks: Box<Vec<voxels::Chunk>>) -> Self {
+    async fn new(window: &Window, mut chunks: Vec<voxels::Chunk>) -> Self {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -446,7 +446,7 @@ pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buff
     })
 }
 
-fn create_instance_buffer(device: &wgpu::Device, instance_data: &Vec<InstanceRaw>) -> wgpu::Buffer {
+fn create_instance_buffer(device: &wgpu::Device, instance_data: &[InstanceRaw]) -> wgpu::Buffer {
     device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Instance Buffer"),
         contents: bytemuck::cast_slice(instance_data),
@@ -458,7 +458,7 @@ pub async fn run() {
     env_logger::init();
 
     let _rng = rand::thread_rng();
-    let chunks = Box::new(vec![voxels::Chunk::new()]);
+    let chunks = vec![voxels::Chunk::new()];
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()

@@ -123,7 +123,7 @@ impl Chunk {
     }
 
     pub fn update(&mut self) {
-        for i in 0..CUBE_VERTICES.len() {
+        for (i, _) in CUBE_VERTICES.iter().enumerate() {
             let vertex = {
                 let vertex = CUBE_VERTICES[i];
                 [vertex[0] * SCALE, vertex[1] * SCALE, vertex[2] * SCALE]
@@ -136,7 +136,7 @@ impl Chunk {
             }
         }
 
-        for i in 0..CUBE_INDICES.len() {
+        for (i, _) in CUBE_INDICES.iter().enumerate() {
             self.indices[i] = CUBE_INDICES[i];
         }
 
