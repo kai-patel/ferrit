@@ -93,7 +93,7 @@ impl Chunk {
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
-                    let block_type = self.blk[x as usize][y as usize][z as usize];
+                    let block_type = self.blk[x][y][z];
 
                     let xf = x as f32;
                     let yf = y as f32;

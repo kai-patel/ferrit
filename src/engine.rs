@@ -200,9 +200,7 @@ impl State {
         let surface_format = surface_caps
             .formats
             .iter()
-            .copied()
-            .filter(|f| f.is_srgb())
-            .next()
+            .copied().find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
 
         let config = wgpu::SurfaceConfiguration {
@@ -340,13 +338,13 @@ impl State {
         }
     }
 
-    fn input(&mut self, event: &WindowEvent) -> bool {
+    fn input(&mut self, _event: &WindowEvent) -> bool {
         false
     }
 
     fn update(&mut self) {}
 
-    fn render(&mut self, chunk: &[crate::voxels::Chunk]) -> Result<(), wgpu::SurfaceError> {
+    fn render(&mut self, _chunk: &[crate::voxels::Chunk]) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
@@ -391,7 +389,7 @@ impl State {
     }
 }
 
-pub fn gen_buffers(buffers: usize) -> Vec<wgpu::Buffer> {
+pub fn gen_buffers(_buffers: usize) -> Vec<wgpu::Buffer> {
     todo!("Generate new buffers");
 }
 
