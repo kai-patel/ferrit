@@ -168,10 +168,11 @@ struct State {
     camera_uniform: CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
+    chunks: Box<Vec<voxels::Chunk>>
 }
 
 impl State {
-    async fn new(window: &Window, chunks: &mut [voxels::Chunk]) -> Self {
+    async fn new(window: &Window, mut chunks: Box<Vec<voxels::Chunk>>) -> Self {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -338,6 +339,7 @@ impl State {
             camera_uniform,
             camera_buffer,
             camera_bind_group,
+            chunks
         }
     }
 
@@ -354,9 +356,15 @@ impl State {
         false
     }
 
-    fn update(&mut self) {}
+    fn update(&mut self) {
+        for i in &mut *self.chunks {
+            i.update();
+        }
 
-    fn render(&mut self, _chunk: &[crate::voxels::Chunk]) -> Result<(), wgpu::SurfaceError> {
+        self.instances = *self.chunks[0].instances;
+    }
+
+    fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
         let output = self.surface.get_current_texture()?;
         let view = output
             .texture
@@ -434,7 +442,7 @@ pub async fn run() {
     env_logger::init();
 
     let mut rng = rand::thread_rng();
-    let mut chunks = [voxels::Chunk::new()];
+    let mut chunks = Box::new(vec![voxels::Chunk::new()]);
 
     let chunk_size = voxels::CHUNK_SIZE;
     for x in 0..chunk_size {
@@ -463,7 +471,7 @@ pub async fn run() {
         .build(&event_loop)
         .expect("Expected to create window");
 
-    let mut state = State::new(&window, &mut chunks).await;
+    let mut state = State::new(&window, chunks).await;
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
@@ -494,7 +502,7 @@ pub async fn run() {
         }
         Event::RedrawRequested(window_id) if window_id == window.id() => {
             state.update();
-            match state.render(&chunks) {
+            match state.render() {
                 Ok(_) => {}
                 Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
                 Err(wgpu::SurfaceError::OutOfMemory) => *control_flow = ControlFlow::Exit,
