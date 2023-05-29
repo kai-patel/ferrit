@@ -200,7 +200,8 @@ impl State {
         let surface_format = surface_caps
             .formats
             .iter()
-            .copied().find(|f| f.is_srgb())
+            .copied()
+            .find(|f| f.is_srgb())
             .unwrap_or(surface_caps.formats[0]);
 
         let config = wgpu::SurfaceConfiguration {
