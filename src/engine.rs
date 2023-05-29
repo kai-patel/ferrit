@@ -60,7 +60,7 @@ struct CameraUniform {
 pub struct Instance {
     pub position: cgmath::Vector3<f32>,
     pub rotation: cgmath::Quaternion<f32>,
-    pub color: [f32; 3]
+    pub color: [f32; 3],
 }
 
 #[repr(C)]
@@ -111,7 +111,7 @@ impl Default for Instance {
         Self {
             position: cgmath::Vector3::new(0.0, 0.0, 0.0),
             rotation: cgmath::Quaternion::new(0.0, 0.0, 0.0, 1.0),
-            color: [0.0, 0.0, 0.0]
+            color: [0.0, 0.0, 0.0],
         }
     }
 }
@@ -122,7 +122,7 @@ impl Instance {
             model: (cgmath::Matrix4::from_translation(self.position)
                 * cgmath::Matrix4::from(self.rotation))
             .into(),
-            color: self.color
+            color: self.color,
         }
     }
 }
@@ -168,7 +168,7 @@ struct State {
     camera_uniform: CameraUniform,
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
-    chunks: Box<Vec<voxels::Chunk>>
+    chunks: Box<Vec<voxels::Chunk>>,
 }
 
 impl State {
@@ -339,7 +339,7 @@ impl State {
             camera_uniform,
             camera_buffer,
             camera_bind_group,
-            chunks
+            chunks,
         }
     }
 
@@ -358,10 +358,26 @@ impl State {
 
     fn update(&mut self) {
         for i in &mut *self.chunks {
+            for x in 0..crate::voxels::CHUNK_SIZE {
+                for y in 0..crate::voxels::CHUNK_SIZE {
+                    for z in 0..crate::voxels::CHUNK_SIZE {
+                        i.set(x, y, z, rand::random());
+                        // i.set(x, y, z, voxels::BlockType::RED);
+                    }
+                }
+            }
             i.update();
         }
 
         self.instances = *self.chunks[0].instances;
+        self.instance_buffer = create_instance_buffer(
+            &self.device,
+            &self
+                .instances
+                .iter()
+                .map(Instance::to_raw)
+                .collect::<Vec<_>>(),
+        );
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -443,28 +459,6 @@ pub async fn run() {
 
     let mut rng = rand::thread_rng();
     let mut chunks = Box::new(vec![voxels::Chunk::new()]);
-
-    let chunk_size = voxels::CHUNK_SIZE;
-    for x in 0..chunk_size {
-        for y in 0..chunk_size {
-            for z in 0..chunk_size {
-                chunks[0].set(
-                    x,
-                    y,
-                    z,
-                    match rng.gen_range(0..=3) {
-                        0 => voxels::BlockType::RED,
-                        1 => voxels::BlockType::BLUE,
-                        2 => voxels::BlockType::GREEN,
-                        3 => voxels::BlockType::YELLOW,
-                        _ => voxels::BlockType::EMPTY,
-                    },
-                );
-
-                println!("{:?}", chunks[0].get(x, y, z));
-            }
-        }
-    }
 
     let event_loop = EventLoop::new();
     let window = WindowBuilder::new()

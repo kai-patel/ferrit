@@ -1,7 +1,13 @@
 #![allow(dead_code)]
+use rand::{
+    distributions::{Standard, Uniform},
+    prelude::Distribution,
+};
+
 use crate::engine;
 
-pub const CHUNK_SIZE: usize = 2;
+pub const CHUNK_SIZE: usize = 4;
+const SCALE: f32 = 0.25;
 
 const CUBE_VERTICES: [[f32; 3]; 24] = [
     [-1.0, -1.0, 1.0],
@@ -63,6 +69,20 @@ impl BlockType {
     }
 }
 
+impl Distribution<BlockType> for Standard {
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> BlockType {
+        match rng.gen_range(0..=5) {
+            0 => BlockType::EMPTY,
+            1 => BlockType::SOLID,
+            2 => BlockType::RED,
+            3 => BlockType::GREEN,
+            4 => BlockType::BLUE,
+            5 => BlockType::YELLOW,
+            _ => BlockType::EMPTY,
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Chunk {
     blk: [[[BlockType; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
@@ -104,8 +124,14 @@ impl Chunk {
 
     pub fn update(&mut self) {
         for i in 0..CUBE_VERTICES.len() {
+            let vertex = {
+                let vertex = CUBE_VERTICES[i];
+                [vertex[0] * SCALE, vertex[1] * SCALE, vertex[2] * SCALE]
+            };
+
+
             self.vertices[i] = engine::Vertex {
-                position: CUBE_VERTICES[i],
+                position: vertex,
                 color: [1.0, 0.0, 0.0],
             }
         }
@@ -131,12 +157,14 @@ impl Chunk {
                             y: yf,
                             z: zf,
                         },
-                        color: block_type.get_color() ,
+                        color: block_type.get_color(),
                         ..Default::default()
                     };
                 }
             }
         }
+
+        // println!("{:?}", self.instances);
     }
 
     pub fn render(&mut self) {
