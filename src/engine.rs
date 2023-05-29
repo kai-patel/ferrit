@@ -444,7 +444,7 @@ pub async fn run() {
                     x,
                     y,
                     z,
-                    match rng.gen_range(0..3) {
+                    match rng.gen_range(0..=3) {
                         0 => voxels::BlockType::RED,
                         1 => voxels::BlockType::BLUE,
                         2 => voxels::BlockType::GREEN,
@@ -452,6 +452,8 @@ pub async fn run() {
                         _ => voxels::BlockType::EMPTY,
                     },
                 );
+
+                println!("{:?}", chunks[0].get(x, y, z));
             }
         }
     }
