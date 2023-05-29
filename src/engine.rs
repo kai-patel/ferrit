@@ -10,6 +10,8 @@ use bytemuck::Pod;
 use bytemuck::Zeroable;
 use rand::Rng;
 
+use crate::voxels;
+
 #[repr(C)]
 #[derive(Copy, Clone, Default, Debug, Pod, Zeroable)]
 pub struct Vertex {
@@ -54,9 +56,10 @@ struct CameraUniform {
     view_proj: [[f32; 4]; 4],
 }
 
-struct Instance {
-    position: cgmath::Vector3<f32>,
-    rotation: cgmath::Quaternion<f32>,
+#[derive(Clone, Copy, Debug)]
+pub struct Instance {
+    pub position: cgmath::Vector3<f32>,
+    pub rotation: cgmath::Quaternion<f32>,
 }
 
 #[repr(C)]
@@ -92,6 +95,15 @@ impl InstanceRaw {
                     format: wgpu::VertexFormat::Float32x4,
                 },
             ],
+        }
+    }
+}
+
+impl Default for Instance {
+    fn default() -> Self {
+        Self {
+            position: cgmath::Vector3::new(0.0, 0.0, 0.0),
+            rotation: cgmath::Quaternion::new(0.0, 0.0, 0.0, 1.0),
         }
     }
 }
@@ -141,6 +153,8 @@ struct State {
     vertex_buffer: wgpu::Buffer,
     index_buffer: wgpu::Buffer,
     num_indices: u32,
+    instances: [Instance; voxels::CHUNK_SIZE * voxels::CHUNK_SIZE * voxels::CHUNK_SIZE],
+    instance_buffer: wgpu::Buffer,
     camera: Camera,
     camera_uniform: CameraUniform,
     camera_buffer: wgpu::Buffer,
@@ -148,7 +162,7 @@ struct State {
 }
 
 impl State {
-    async fn new(window: &Window, chunks: &mut [crate::voxels::Chunk]) -> Self {
+    async fn new(window: &Window, chunks: &mut [voxels::Chunk]) -> Self {
         let size = window.inner_size();
 
         let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
@@ -203,11 +217,14 @@ impl State {
 
         // TODO: Go over every chunk
         chunks[0].update();
-        let vertices = chunks[0].vertices;
-        let indices = chunks[0].indices;
+        let vertices = *chunks[0].vertices;
+        let indices = *chunks[0].indices;
+        let instances = *chunks[0].instances;
+        let instance_data = instances.iter().map(Instance::to_raw).collect::<Vec<_>>();
 
         let vertex_buffer = create_vertex_buffer(&device, &vertices);
         let index_buffer = create_index_buffer(&device, &indices);
+        let instance_buffer = create_instance_buffer(&device, &instance_data);
 
         let num_indices = indices.len() as u32;
 
@@ -267,7 +284,7 @@ impl State {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: "vs_main",
-                buffers: &[Vertex::desc()],
+                buffers: &[Vertex::desc(), InstanceRaw::desc()],
             },
             fragment: Some(wgpu::FragmentState {
                 module: &shader,
@@ -306,6 +323,8 @@ impl State {
             vertex_buffer,
             index_buffer,
             num_indices,
+            instances,
+            instance_buffer,
             camera,
             camera_uniform,
             camera_buffer,
@@ -361,8 +380,9 @@ impl State {
         render_pass.set_bind_group(0, &self.camera_bind_group, &[]);
         render_pass.set_vertex_buffer(0, self.vertex_buffer.slice(..));
         render_pass.set_index_buffer(self.index_buffer.slice(..), wgpu::IndexFormat::Uint16);
+        render_pass.set_vertex_buffer(1, self.instance_buffer.slice(..));
 
-        render_pass.draw_indexed(0..self.num_indices, 0, 0..1);
+        render_pass.draw_indexed(0..self.num_indices, 0, 0..self.instances.len() as _);
 
         drop(render_pass);
 
@@ -393,13 +413,21 @@ pub fn create_index_buffer(device: &wgpu::Device, indices: &[u16]) -> wgpu::Buff
     })
 }
 
+fn create_instance_buffer(device: &wgpu::Device, instance_data: &Vec<InstanceRaw>) -> wgpu::Buffer {
+    device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Instance Buffer"),
+        contents: bytemuck::cast_slice(&instance_data),
+        usage: wgpu::BufferUsages::VERTEX,
+    })
+}
+
 pub async fn run() {
     env_logger::init();
 
     let mut rng = rand::thread_rng();
-    let mut chunks = [crate::voxels::Chunk::new()];
+    let mut chunks = [voxels::Chunk::new()];
 
-    let chunk_size = crate::voxels::CHUNK_SIZE;
+    let chunk_size = voxels::CHUNK_SIZE;
     for x in 0..chunk_size {
         for y in 0..chunk_size {
             for z in 0..chunk_size {
@@ -408,11 +436,11 @@ pub async fn run() {
                     y,
                     z,
                     match rng.gen_range(0..3) {
-                        0 => crate::voxels::BlockType::RED,
-                        1 => crate::voxels::BlockType::BLUE,
-                        2 => crate::voxels::BlockType::GREEN,
-                        3 => crate::voxels::BlockType::YELLOW,
-                        _ => crate::voxels::BlockType::EMPTY,
+                        0 => voxels::BlockType::RED,
+                        1 => voxels::BlockType::BLUE,
+                        2 => voxels::BlockType::GREEN,
+                        3 => voxels::BlockType::YELLOW,
+                        _ => voxels::BlockType::EMPTY,
                     },
                 );
             }

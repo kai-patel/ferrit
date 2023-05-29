@@ -1,4 +1,6 @@
 #![allow(dead_code)]
+use rand::Rng;
+
 use crate::engine;
 
 pub const CHUNK_SIZE: usize = 2;
@@ -55,8 +57,9 @@ pub struct Chunk {
     blk: [[[BlockType; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
     elements: usize,
     changed: bool,
-    pub vertices: [engine::Vertex; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 24],
-    pub indices: [u16; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 36],
+    pub vertices: Box<[engine::Vertex; CUBE_VERTICES.len()]>,
+    pub indices: Box<[u16; CUBE_INDICES.len()]>,
+    pub instances: Box<[engine::Instance; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE]>,
 }
 
 impl Default for Chunk {
@@ -65,8 +68,11 @@ impl Default for Chunk {
             blk: Default::default(),
             elements: 0,
             changed: false,
-            vertices: [engine::Vertex::default(); CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 24],
-            indices: [0u16; CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 36],
+            vertices: Box::new([engine::Vertex::default(); CUBE_VERTICES.len()]),
+            indices: Box::new([0u16; CUBE_INDICES.len()]),
+            instances: Box::new(
+                [engine::Instance::default(); CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE],
+            ),
         }
     }
 }
@@ -86,50 +92,48 @@ impl Chunk {
     }
 
     pub fn update(&mut self) {
-        self.changed = false;
+        let mut rng = rand::thread_rng();
 
-        let mut i = 0;
+        for i in 0..CUBE_VERTICES.len() {
+            self.vertices[i] = engine::Vertex {
+                position: CUBE_VERTICES[i],
+                color: [rng.gen(), rng.gen(), rng.gen()],
+            }
+        }
+
+        println!("{:?}", self.vertices);
+
+        // self.vertices = Box::new(CUBE_VERTICES.map(|v| engine::Vertex {
+        //     position: v,
+        //     color: [rng.gen(), rng.gen(), rng.gen()],
+        // }));
+
+        for i in 0..CUBE_INDICES.len() {
+            self.indices[i] = CUBE_INDICES[i];
+        }
+
+        self.changed = false;
 
         for x in 0..CHUNK_SIZE {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
-                    let block_type = self.blk[x][y][z];
+                    let _block_type = self.blk[x][y][z];
 
                     let xf = x as f32;
                     let yf = y as f32;
                     let zf = z as f32;
 
-                    for v in CUBE_VERTICES {
-                        self.vertices[i].position[0] = xf + v[0];
-                        self.vertices[i].position[1] = yf + v[1];
-                        self.vertices[i].position[2] = zf + v[2];
-                        self.vertices[i].color = match block_type {
-                            BlockType::RED => [1.0, 0.0, 0.0],
-                            BlockType::GREEN => [0.0, 1.0, 0.0],
-                            BlockType::BLUE => [0.0, 0.0, 1.0],
-                            BlockType::YELLOW => [1.0, 1.0, 0.0],
-                            BlockType::EMPTY => [0.0, 1.0, 1.0],
-                            BlockType::SOLID => [1.0, 0.0, 1.0],
-                        };
-                        i += 1;
-                    }
-
-                    println!("{:?}", self.vertices[i - 1].color);
+                    self.instances[x + CHUNK_SIZE * (y + CHUNK_SIZE * z)] = engine::Instance {
+                        position: cgmath::Vector3 {
+                            x: xf,
+                            y: yf,
+                            z: zf,
+                        },
+                        ..Default::default()
+                    };
                 }
             }
         }
-
-        // For each cube in the chunk, add the indices
-        for a in 0..CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE * 36 {
-            self.indices[a] = {
-                let n = a / 36;
-                CUBE_INDICES[a % 36] + (n * 24) as u16
-            };
-        }
-
-        // println!("{:?}\n{:?}", self.indices, self.vertices);
-
-        self.elements = i;
     }
 
     pub fn render(&mut self) {
