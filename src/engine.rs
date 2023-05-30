@@ -9,7 +9,6 @@ use winit::{
 use bytemuck::Pod;
 use bytemuck::Zeroable;
 
-
 use crate::voxels;
 
 #[repr(C)]
@@ -152,6 +151,7 @@ impl Camera {
     }
 }
 
+#[allow(dead_code)]
 struct State {
     surface: wgpu::Surface,
     device: wgpu::Device,
@@ -169,6 +169,7 @@ struct State {
     camera_buffer: wgpu::Buffer,
     camera_bind_group: wgpu::BindGroup,
     chunks: Vec<voxels::Chunk>,
+    last_update_time: std::time::Instant,
 }
 
 impl State {
@@ -227,6 +228,9 @@ impl State {
 
         // TODO: Go over every chunk
         chunks[0].update();
+
+        let last_update_time = std::time::Instant::now();
+
         let vertices = *chunks[0].vertices;
         let indices = *chunks[0].indices;
         let instances = *chunks[0].instances;
@@ -340,6 +344,7 @@ impl State {
             camera_buffer,
             camera_bind_group,
             chunks,
+            last_update_time,
         }
     }
 
@@ -356,28 +361,30 @@ impl State {
         false
     }
 
-    fn update(&mut self) {
-        for i in &mut *self.chunks {
-            for x in 0..crate::voxels::CHUNK_SIZE {
-                for y in 0..crate::voxels::CHUNK_SIZE {
-                    for z in 0..crate::voxels::CHUNK_SIZE {
-                        i.set(x, y, z, rand::random());
-                        // i.set(x, y, z, voxels::BlockType::RED);
+    fn update(&mut self, _dt: std::time::Duration) {
+        if (std::time::Instant::now() - self.last_update_time).as_millis() >= 1000 {
+            for i in &mut *self.chunks {
+                for x in 0..crate::voxels::CHUNK_SIZE {
+                    for y in 0..crate::voxels::CHUNK_SIZE {
+                        for z in 0..crate::voxels::CHUNK_SIZE {
+                            i.set(x, y, z, rand::random());
+                            // i.set(x, y, z, voxels::BlockType::RED);
+                        }
                     }
                 }
+                i.update();
             }
-            i.update();
+            self.last_update_time = std::time::Instant::now();
+            self.instances = *self.chunks[0].instances;
+            self.instance_buffer = create_instance_buffer(
+                &self.device,
+                &self
+                    .instances
+                    .iter()
+                    .map(Instance::to_raw)
+                    .collect::<Vec<_>>(),
+            );
         }
-
-        self.instances = *self.chunks[0].instances;
-        self.instance_buffer = create_instance_buffer(
-            &self.device,
-            &self
-                .instances
-                .iter()
-                .map(Instance::to_raw)
-                .collect::<Vec<_>>(),
-        );
     }
 
     fn render(&mut self) -> Result<(), wgpu::SurfaceError> {
@@ -466,6 +473,7 @@ pub async fn run() {
         .expect("Expected to create window");
 
     let mut state = State::new(&window, chunks).await;
+    let mut last_render_time = std::time::Instant::now();
 
     event_loop.run(move |event, _, control_flow| match event {
         Event::WindowEvent {
@@ -495,7 +503,10 @@ pub async fn run() {
             }
         }
         Event::RedrawRequested(window_id) if window_id == window.id() => {
-            state.update();
+            let now = std::time::Instant::now();
+            let dt = now - last_render_time;
+            last_render_time = now;
+            state.update(dt);
             match state.render() {
                 Ok(_) => {}
                 Err(wgpu::SurfaceError::Lost) => state.resize(state.size),
