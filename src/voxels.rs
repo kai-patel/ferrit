@@ -1,8 +1,5 @@
 #![allow(dead_code)]
-use rand::{
-    distributions::{Standard},
-    prelude::Distribution,
-};
+use rand::{distributions::Standard, prelude::Distribution};
 
 use crate::engine;
 
@@ -48,12 +45,12 @@ const CUBE_INDICES: &[u16] = &[
 #[derive(Copy, Clone, Default, Debug)]
 pub enum BlockType {
     #[default]
-    EMPTY,
-    SOLID,
     RED,
     GREEN,
     BLUE,
     YELLOW,
+    TEAL,
+    MAGENTA,
 }
 
 impl BlockType {
@@ -63,8 +60,8 @@ impl BlockType {
             BlockType::BLUE => [0.0, 1.0, 0.0],
             BlockType::GREEN => [0.0, 0.0, 1.0],
             BlockType::YELLOW => [1.0, 1.0, 0.0],
-            BlockType::SOLID => [1.0, 0.0, 1.0],
-            BlockType::EMPTY => [0.0, 0.0, 0.0],
+            BlockType::MAGENTA => [1.0, 0.0, 1.0],
+            BlockType::TEAL => [0.0, 1.0, 1.0],
         }
     }
 }
@@ -72,13 +69,13 @@ impl BlockType {
 impl Distribution<BlockType> for Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> BlockType {
         match rng.gen_range(0..=5) {
-            0 => BlockType::EMPTY,
-            1 => BlockType::SOLID,
-            2 => BlockType::RED,
-            3 => BlockType::GREEN,
-            4 => BlockType::BLUE,
-            5 => BlockType::YELLOW,
-            _ => BlockType::EMPTY,
+            0 => BlockType::RED,
+            1 => BlockType::GREEN,
+            2 => BlockType::BLUE,
+            3 => BlockType::YELLOW,
+            4 => BlockType::TEAL,
+            5 => BlockType::MAGENTA,
+            _ => BlockType::MAGENTA,
         }
     }
 }
@@ -128,7 +125,6 @@ impl Chunk {
                 let vertex = CUBE_VERTICES[i];
                 [vertex[0] * SCALE, vertex[1] * SCALE, vertex[2] * SCALE]
             };
-
 
             self.vertices[i] = engine::Vertex {
                 position: vertex,
